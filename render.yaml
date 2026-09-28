@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: thai-weather-disaster-ai-center
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      # All environment variables below are OPTIONAL. The app functions out-of-the-box with automatic SQLite & in-memory fallbacks.
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: DISCORD_CLIENT_ID
+        sync: false
+      - key: DISCORD_WEBHOOK_CRITICAL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false

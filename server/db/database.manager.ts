@@ -9,7 +9,10 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import type { NormalizedEvent } from '../../shared/types.ts';
+
+const require = createRequire(import.meta.url);
 
 export type DatabaseType = 'SQLite' | 'PostgreSQL';
 export type AppMode = 'Development' | 'Production';

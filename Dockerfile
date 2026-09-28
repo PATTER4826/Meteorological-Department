@@ -1,33 +1,37 @@
 # 🇹🇭 THAI WEATHER & DISASTER AI CENTER
-# Production Multi-Stage Dockerfile
+# Production Multi-Stage Dockerfile for Render & Container Deployments
 
+# Stage 1: Build Frontend Assets
 FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Install build dependencies
+# Copy dependency manifests
 COPY package*.json ./
-RUN npm ci
 
-# Copy source files
+# Install dependencies using npm install (Render-compatible, no npm ci lockfile strictness)
+RUN npm install
+
+# Copy application sources
 COPY . .
 
-# Build Vite frontend assets
+# Build client distribution
 RUN npm run build
 
-# Production Runner stage
+# Stage 2: Production Runtime
 FROM node:22-alpine AS runner
 
 WORKDIR /app
 
+# Production environment variables
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Copy package descriptors
+# Copy dependency manifests and install production dependencies
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
-# Copy built frontend dist and server codebase
+# Copy built web dist and backend sources
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/server.ts ./server.ts
 COPY --from=builder /app/server ./server
@@ -35,8 +39,11 @@ COPY --from=builder /app/shared ./shared
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
-# Expose dev/production port
+# Create data directory for local SQLite / Fallback storage
+RUN mkdir -p /app/data
+
+# Expose server port (Render overrides with $PORT dynamically)
 EXPOSE 3000
 
-# Launch server with tsx
-CMD ["npx", "tsx", "server.ts"]
+# Start server
+CMD ["node", "server.ts"]

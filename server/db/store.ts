@@ -18,6 +18,8 @@ import type {
   SituationalSummary
 } from '../../shared/types.ts';
 import { THAILAND_PROVINCES, calculateDistanceKm } from '../../shared/types.ts';
+import { databaseManager } from './database.manager.ts';
+import { cacheManager } from './cache.manager.ts';
 
 class DisasterStore {
   private events: Map<string, NormalizedEvent> = new Map();
@@ -289,6 +291,9 @@ class DisasterStore {
   public upsertEvent(event: NormalizedEvent): { isNew: boolean; isEscalated: boolean; event: NormalizedEvent } {
     const existing = this.events.get(event.fingerprint);
 
+    // Persist to database manager (SQLite in dev, PostgreSQL when configured)
+    databaseManager.saveEvent(event).catch(() => {});
+
     if (!existing) {
       this.events.set(event.fingerprint, event);
       this.totalEventsDetectedToday++;
@@ -429,6 +434,7 @@ class DisasterStore {
     if (this.auditLogs.length > 500) {
       this.auditLogs.pop();
     }
+    databaseManager.saveAuditLog(log).catch(() => {});
     console.log(`[${log.time.split('T')[1].substring(0, 8)}] [${level}] ${message}`);
   }
 
@@ -457,7 +463,11 @@ class DisasterStore {
 
     return {
       database: 'ONLINE',
-      redis: 'STANDALONE_FALLBACK',
+      databaseType: databaseManager.getDatabaseType(),
+      cacheQueueType: cacheManager.getCacheType(),
+      mode: databaseManager.getMode(),
+      isDevMode: databaseManager.isDev(),
+      redis: process.env.REDIS_URL ? 'ONLINE' : 'STANDALONE_FALLBACK',
       discordBot: process.env.DISCORD_TOKEN ? 'ONLINE' : 'STANDBY_WEBHOOK',
       geminiAI: process.env.GEMINI_API_KEY ? 'ONLINE' : 'NO_KEY',
       weatherApi: 'ONLINE',

@@ -134,6 +134,10 @@ export interface StormData {
 
 export interface SystemHealthStatus {
   database: 'ONLINE' | 'DEGRADED' | 'OFFLINE';
+  databaseType?: 'SQLite' | 'PostgreSQL';
+  cacheQueueType?: 'In-Memory' | 'Redis';
+  mode?: 'Development' | 'Production';
+  isDevMode?: boolean;
   redis: 'ONLINE' | 'STANDALONE_FALLBACK' | 'OFFLINE';
   discordBot: 'ONLINE' | 'STANDBY_WEBHOOK' | 'OFFLINE';
   geminiAI: 'ONLINE' | 'OFFLINE' | 'NO_KEY';

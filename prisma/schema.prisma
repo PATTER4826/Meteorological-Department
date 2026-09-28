@@ -1,0 +1,311 @@
+// Prisma Schema for Thai Weather & Disaster AI Center
+// 🇹🇭 ระบบศูนย์แจ้งเตือนสภาพอากาศและภัยพิบัติสำหรับประเทศไทย
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPERADMIN
+  ADMIN
+  OPERATOR
+  VIEWER
+}
+
+enum EventType {
+  EARTHQUAKE
+  FLOOD
+  HEAVY_RAIN
+  STORM
+  THUNDERSTORM
+  PM25
+  AIR_POLLUTION
+  HEAT
+  WILDFIRE
+  TSUNAMI
+  HIGH_WAVES
+  OTHER
+}
+
+enum SeverityLevel {
+  INFORMATION
+  WATCH
+  WARNING
+  CRITICAL
+}
+
+enum EventStatus {
+  ACTIVE
+  MONITORING
+  RESOLVED
+  CANCELLED
+}
+
+model User {
+  id           String      @id @default(uuid())
+  email        String      @unique
+  name         String
+  passwordHash String
+  role         Role        @default(OPERATOR)
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  auditLogs    AuditLog[]
+
+  @@index([email])
+}
+
+model DiscordServer {
+  id             String           @id @default(uuid())
+  guildId        String           @unique
+  guildName      String
+  joinedAt       DateTime         @default(now())
+  isActive       Boolean          @default(true)
+  channels       DiscordChannel[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model DiscordChannel {
+  id             String           @id @default(uuid())
+  channelId      String
+  channelName    String
+  webhookUrl     String?
+  serverId       String
+  server         DiscordServer    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  subscribedTypes EventType[]
+  minSeverity    SeverityLevel    @default(WATCH)
+  filterProvinces String[]        @default([])
+  isActive       Boolean          @default(true)
+  notifications  Notification[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@unique([serverId, channelId])
+  @@index([channelId])
+}
+
+model EventSource {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  code        String      @unique
+  url         String
+  type        EventType
+  isEnabled   Boolean     @default(true)
+  pollInterval Int        @default(60) // seconds
+  lastPolledAt DateTime?
+  lastStatus  String      @default("OK")
+  events      Event[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Event {
+  id              String         @id @default(uuid())
+  fingerprint     String         @unique
+  type            EventType
+  title           String
+  description     String
+  severity        SeverityLevel  @default(INFORMATION)
+  status          EventStatus    @default(ACTIVE)
+  latitude        Float
+  longitude       Float
+  province        String
+  district        String?
+  magnitude       Float?
+  depth           Float?
+  waterLevelMeters Float?
+  pm25Value       Float?
+  windSpeedKmh    Float?
+  rainfallMm      Float?
+  occurredAt      DateTime
+  detectedAt      DateTime       @default(now())
+  sourceId        String?
+  source          EventSource?   @relation(fields: [sourceId], references: [id])
+  sourceName      String
+  sourceUrl       String
+  confidence      Float          @default(1.0)
+  isDemo          Boolean        @default(false)
+
+  // AI Analysis fields
+  aiSummary       String?
+  aiFact          String?
+  aiAnalysisText  String?
+  aiRecommendation String?
+  aiAffectedAreas String[]       @default([])
+  aiConfidence    Float?
+  aiAnalyzedAt    DateTime?
+
+  notifications   Notification[]
+  alerts          Alert[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([type])
+  @@index([severity])
+  @@index([status])
+  @@index([province])
+  @@index([occurredAt])
+  @@index([fingerprint])
+}
+
+model Alert {
+  id              String         @id @default(uuid())
+  eventId         String
+  event           Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  severity        SeverityLevel
+  previousSeverity SeverityLevel?
+  isEscalation    Boolean        @default(false)
+  summaryTh       String
+  sentToDiscord   Boolean        @default(false)
+  sentToWeb       Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+
+  @@index([eventId])
+  @@index([severity])
+}
+
+model WeatherObservation {
+  id           String      @id @default(uuid())
+  province     String
+  stationName  String
+  latitude     Float
+  longitude    Float
+  temperature  Float
+  humidity     Float
+  pressure     Float
+  windSpeed    Float
+  windDirection Float
+  rainMmPerHour Float
+  condition    String
+  recordedAt   DateTime
+  createdAt    DateTime    @default(now())
+
+  @@index([province, recordedAt])
+}
+
+model Earthquake {
+  id           String      @id @default(uuid())
+  externalId   String      @unique
+  magnitude    Float
+  depth        Float
+  latitude     Float
+  longitude    Float
+  place        String
+  distanceToThailandKm Float?
+  nearestThaiProvince String?
+  occurredAt   DateTime
+  source       String
+  createdAt    DateTime    @default(now())
+
+  @@index([occurredAt])
+  @@index([magnitude])
+}
+
+model FloodObservation {
+  id           String      @id @default(uuid())
+  stationId    String
+  stationName  String
+  river        String
+  basin        String
+  province     String
+  latitude     Float
+  longitude    Float
+  waterLevelM  Float
+  bankLevelM   Float
+  capacityPercent Float
+  status       String      // NORMAL, WARNING, CRITICAL, OVERFLOW
+  recordedAt   DateTime
+  createdAt    DateTime    @default(now())
+
+  @@index([province, recordedAt])
+  @@index([status])
+}
+
+model AirQualityObservation {
+  id           String      @id @default(uuid())
+  stationId    String
+  stationName  String
+  province     String
+  latitude     Float
+  longitude    Float
+  pm25         Float
+  pm10         Float?
+  aqi          Int?
+  airQualityStatus String  // EXCELLENT, SATISFACTORY, MODERATE, UNHEALTHY, VERY_UNHEALTHY
+  recordedAt   DateTime
+  createdAt    DateTime    @default(now())
+
+  @@index([province, recordedAt])
+}
+
+model Storm {
+  id           String      @id @default(uuid())
+  name         String
+  category     String      // Tropical Depression, Tropical Storm, Typhoon
+  maxWindSpeed Float
+  centralPressure Float
+  currentLat   Float
+  currentLon   Float
+  forecastPath Json?
+  active       Boolean     @default(true)
+  updatedAt    DateTime    @updatedAt
+  createdAt    DateTime    @default(now())
+
+  @@index([active])
+}
+
+model Notification {
+  id           String          @id @default(uuid())
+  eventId      String
+  event        Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  channelId    String?
+  channel      DiscordChannel? @relation(fields: [channelId], references: [id])
+  type         String          // DISCORD_BOT, DISCORD_WEBHOOK, WEB_SOCKET, BROWSER_PUSH
+  status       String          // PENDING, SENT, FAILED
+  payload      Json
+  errorMessage String?
+  sentAt       DateTime?
+  createdAt    DateTime        @default(now())
+
+  @@index([eventId])
+  @@index([status])
+}
+
+model NotificationLog {
+  id           String      @id @default(uuid())
+  channel      String      // DISCORD, WEB, LOG
+  target       String
+  messageTitle String
+  severity     SeverityLevel
+  success      Boolean
+  details      String?
+  createdAt    DateTime    @default(now())
+
+  @@index([createdAt])
+}
+
+model SystemSetting {
+  key         String      @id
+  value       String
+  description String?
+  updatedAt   DateTime    @updatedAt
+}
+
+model AuditLog {
+  id          String      @id @default(uuid())
+  userId      String?
+  user        User?       @relation(fields: [userId], references: [id])
+  action      String
+  target      String
+  ipAddress   String?
+  details     Json?
+  createdAt   DateTime    @default(now())
+
+  @@index([createdAt])
+}

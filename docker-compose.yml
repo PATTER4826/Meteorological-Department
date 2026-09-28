@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # Web App & Backend API & Discord Bot Worker
+  thai-disaster-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: thai_weather_disaster_ai_center
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=postgresql://postgres:postgres_secure_password@postgres:5432/thai_disaster_db?schema=public
+      - REDIS_URL=redis://redis:6379
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
+      - DISCORD_WEBHOOK_CRITICAL=${DISCORD_WEBHOOK_CRITICAL}
+      - DISCORD_WEBHOOK_WEATHER=${DISCORD_WEBHOOK_WEATHER}
+      - DISCORD_WEBHOOK_EARTHQUAKE=${DISCORD_WEBHOOK_EARTHQUAKE}
+      - DISCORD_WEBHOOK_FLOOD=${DISCORD_WEBHOOK_FLOOD}
+      - DISCORD_WEBHOOK_PM25=${DISCORD_WEBHOOK_PM25}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # PostgreSQL Relational Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: thai_disaster_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_secure_password
+      POSTGRES_DB: thai_disaster_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: thai_disaster_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:

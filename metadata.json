@@ -1,0 +1,6 @@
+{
+  "name": "Thai Weather & Disaster AI Center",
+  "description": "ระบบศูนย์แจ้งเตือนสภาพอากาศและภัยพิบัติสำหรับประเทศไทย วิเคราะห์ด้วย AI เชื่อมต่อ Discord Bot และ Real-time Dashboard",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

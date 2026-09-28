@@ -8,12 +8,12 @@ import { WeatherProvider } from '../providers/weather.provider.ts';
 import { AirQualityProvider } from '../providers/airquality.provider.ts';
 import { FloodProvider } from '../providers/flood.provider.ts';
 import { StormProvider } from '../providers/storm.provider.ts';
-import { DisasterDataProvider } from '../providers/provider.interface.ts';
+import type { DisasterDataProvider } from '../providers/provider.interface.ts';
 import { disasterStore } from '../db/store.ts';
 import { geminiService } from '../ai/gemini.service.ts';
 import { notificationEngine } from '../notifications/notification.engine.ts';
 import { sseManager } from '../realtime/sse.ts';
-import { NormalizedEvent } from '../../shared/types.ts';
+import type { NormalizedEvent } from '../../shared/types.ts';
 
 class DataCollector {
   private providers: DisasterDataProvider[] = [];

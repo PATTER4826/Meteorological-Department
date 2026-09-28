@@ -3,8 +3,9 @@
  * Tropical Storm & Cyclone Tracker Provider
  */
 
-import { DisasterDataProvider, DataFetchResult } from './provider.interface.ts';
-import { NormalizedEvent, StormData, calculateDistanceKm } from '../../shared/types.ts';
+import type { DisasterDataProvider, DataFetchResult } from './provider.interface.ts';
+import type { NormalizedEvent, StormData } from '../../shared/types.ts';
+import { calculateDistanceKm } from '../../shared/types.ts';
 
 export class StormProvider implements DisasterDataProvider {
   readonly id = 'tmd-cyclone-tracker';

@@ -230,3 +230,17 @@ export function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lo
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return Math.round(R * c);
 }
+
+// Runtime object fallbacks for Node.js type stripping compatibility
+export const AirQualityData = {} as any;
+export const WeatherObservationData = {} as any;
+export const EarthquakeData = {} as any;
+export const FloodStationData = {} as any;
+export const StormData = {} as any;
+export const NormalizedEvent = {} as any;
+export const AIAnalysisResult = {} as any;
+export const SystemHealthStatus = {} as any;
+export const DataProviderStatus = {} as any;
+export const DiscordChannelSetting = {} as any;
+export const SituationalSummary = {} as any;
+

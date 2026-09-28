@@ -3,7 +3,7 @@
  * Real-time Server-Sent Events (SSE) Manager
  */
 
-import { Response } from 'express';
+import type { Response } from 'express';
 
 interface SSEClient {
   id: string;

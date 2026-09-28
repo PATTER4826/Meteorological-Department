@@ -3,7 +3,8 @@
  * Express Full-Stack Server
  */
 
-import express, { Request, Response } from 'express';
+import express from 'express';
+import type { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -12,7 +13,7 @@ import { dataCollector } from './server/collector/collector.ts';
 import { sseManager } from './server/realtime/sse.ts';
 import { geminiService } from './server/ai/gemini.service.ts';
 import { DiscordService } from './server/notifications/discord.service.ts';
-import { EventType, SeverityLevel, NormalizedEvent } from './shared/types.ts';
+import type { EventType, SeverityLevel, NormalizedEvent } from './shared/types.ts';
 
 dotenv.config();
 

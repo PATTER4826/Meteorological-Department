@@ -3,7 +3,7 @@
  * Data Repository Store (In-Memory with PostgreSQL Schema mapping)
  */
 
-import {
+import type {
   NormalizedEvent,
   EventType,
   SeverityLevel,
@@ -15,10 +15,9 @@ import {
   SystemHealthStatus,
   DataProviderStatus,
   DiscordChannelSetting,
-  SituationalSummary,
-  THAILAND_PROVINCES,
-  calculateDistanceKm
+  SituationalSummary
 } from '../../shared/types.ts';
+import { THAILAND_PROVINCES, calculateDistanceKm } from '../../shared/types.ts';
 
 class DisasterStore {
   private events: Map<string, NormalizedEvent> = new Map();

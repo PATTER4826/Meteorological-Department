@@ -3,8 +3,9 @@
  * Real Open-Meteo Weather Provider for Thailand
  */
 
-import { DisasterDataProvider, DataFetchResult } from './provider.interface.ts';
-import { NormalizedEvent, WeatherObservationData, SeverityLevel, THAILAND_PROVINCES } from '../../shared/types.ts';
+import type { DisasterDataProvider, DataFetchResult } from './provider.interface.ts';
+import type { NormalizedEvent, WeatherObservationData, SeverityLevel } from '../../shared/types.ts';
+import { THAILAND_PROVINCES } from '../../shared/types.ts';
 
 export class WeatherProvider implements DisasterDataProvider {
   readonly id = 'open-meteo-weather';

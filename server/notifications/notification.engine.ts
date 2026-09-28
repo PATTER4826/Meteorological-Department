@@ -3,7 +3,7 @@
  * Central Notification Engine with Anti-Spam & Escalation Router
  */
 
-import { NormalizedEvent, SeverityLevel } from '../../shared/types.ts';
+import type { NormalizedEvent, SeverityLevel } from '../../shared/types.ts';
 import { disasterStore } from '../db/store.ts';
 import { DiscordService } from './discord.service.ts';
 import { sseManager } from '../realtime/sse.ts';

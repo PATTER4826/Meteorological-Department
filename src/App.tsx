@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import {
+import type {
   NormalizedEvent,
   EarthquakeData,
   WeatherObservationData,
@@ -14,7 +14,8 @@ import {
   SystemHealthStatus,
   DataProviderStatus,
   DiscordChannelSetting,
-  SituationalSummary
+  SituationalSummary,
+  EventType
 } from '../shared/types.ts';
 
 import { ThailandMap } from './components/ThailandMap.tsx';
@@ -27,6 +28,8 @@ import { FloodView } from './components/FloodView.tsx';
 import { WeatherView } from './components/WeatherView.tsx';
 import { AirQualityView } from './components/AirQualityView.tsx';
 import { AlertsView } from './components/AlertsView.tsx';
+import { DiscordBotPage } from './components/DiscordBotPage.tsx';
+import { EmergencyGuideModal } from './components/EmergencyGuideModal.tsx';
 
 import {
   ShieldAlert,
@@ -45,7 +48,8 @@ import {
   Clock,
   RefreshCw,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  LifeBuoy
 } from 'lucide-react';
 
 export default function App() {
@@ -64,6 +68,8 @@ export default function App() {
 
   // UI state
   const [isAiDrawerOpen, setIsAiDrawerOpen] = useState(false);
+  const [isEmergencyGuideOpen, setIsEmergencyGuideOpen] = useState(false);
+  const [emergencyGuideType, setEmergencyGuideType] = useState<EventType>('EARTHQUAKE');
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [sseConnected, setSseConnected] = useState(false);
   const [currentTime, setCurrentTime] = useState<string>('');
@@ -320,6 +326,31 @@ export default function App() {
               {isAudioEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             </button>
 
+            {/* Emergency Guide Button */}
+            <button
+              onClick={() => {
+                setEmergencyGuideType(selectedEvent ? selectedEvent.type : 'EARTHQUAKE');
+                setIsEmergencyGuideOpen(true);
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/40 font-medium flex items-center gap-1.5 transition-colors"
+            >
+              <LifeBuoy className="w-3.5 h-3.5" />
+              <span>คู่มือรับมือภัย</span>
+            </button>
+
+            {/* Discord Bot Button */}
+            <button
+              onClick={() => setActiveTab('discord-bot')}
+              className={`px-3.5 py-1.5 rounded-xl font-medium flex items-center gap-1.5 transition-all shadow-md ${
+                activeTab === 'discord-bot'
+                  ? 'bg-[#5865F2] text-white shadow-[#5865F2]/40'
+                  : 'bg-[#5865F2]/20 hover:bg-[#5865F2]/30 text-[#858ff8] border border-[#5865F2]/40'
+              }`}
+            >
+              <Radio className="w-3.5 h-3.5" />
+              <span>เพิ่มเข้า Discord</span>
+            </button>
+
             {/* AI Assistant Button */}
             <button
               onClick={() => setIsAiDrawerOpen(true)}
@@ -418,6 +449,21 @@ export default function App() {
           </button>
 
           <button
+            onClick={() => setActiveTab('discord-bot')}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-medium transition-all shrink-0 ${
+              activeTab === 'discord-bot'
+                ? 'bg-[#5865F2] text-white shadow-md shadow-[#5865F2]/40'
+                : 'text-[#858ff8] hover:text-white hover:bg-[#5865F2]/20 border border-[#5865F2]/30'
+            }`}
+          >
+            <Radio className="w-3.5 h-3.5" />
+            <span>บอท Discord (Add to Server)</span>
+            <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-white text-[#5865F2]">
+              BOT
+            </span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('admin')}
             className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-medium transition-all shrink-0 ${
               activeTab === 'admin'
@@ -460,11 +506,20 @@ export default function App() {
 
         {/* Tab 2: Interactive Thailand Map */}
         {activeTab === 'map' && (
-          <div className="flex flex-col gap-4 h-[calc(100vh-170px)] min-h-[600px]">
+          <div className="flex flex-col gap-4 h-[calc(100vh-170px)] min-h-[620px]">
             <ThailandMap
               events={events}
+              weather={weather}
+              floods={floods}
+              airQuality={airQuality}
+              earthquakes={earthquakes}
+              storms={storms}
               selectedEvent={selectedEvent}
               onSelectEvent={(ev) => setSelectedEvent(ev)}
+              onOpenEmergencyGuide={(type) => {
+                setEmergencyGuideType(type);
+                setIsEmergencyGuideOpen(true);
+              }}
             />
           </div>
         )}
@@ -506,7 +561,12 @@ export default function App() {
           <AirQualityView airQuality={airQuality} />
         )}
 
-        {/* Tab 8: Admin & Setup Wizard */}
+        {/* Tab 8: Discord Bot Landing & Setup */}
+        {activeTab === 'discord-bot' && (
+          <DiscordBotPage />
+        )}
+
+        {/* Tab 9: Admin & Setup Wizard */}
         {activeTab === 'admin' && (
           <AdminPanel
             providers={providers}
@@ -539,6 +599,17 @@ export default function App() {
         event={selectedEvent}
         onClose={() => setSelectedEvent(null)}
         onSendToDiscord={handleSendDiscord}
+        onOpenEmergencyGuide={(type) => {
+          setEmergencyGuideType(type);
+          setIsEmergencyGuideOpen(true);
+        }}
+      />
+
+      {/* Emergency Safety Guide Modal */}
+      <EmergencyGuideModal
+        isOpen={isEmergencyGuideOpen}
+        onClose={() => setIsEmergencyGuideOpen(false)}
+        initialType={emergencyGuideType}
       />
 
       {/* AI Assistant & Situational Summary Drawer */}

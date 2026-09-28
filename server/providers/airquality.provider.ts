@@ -3,8 +3,8 @@
  * Real Air Quality (PM2.5 & AQI) Provider
  */
 
-import { DisasterDataProvider, DataFetchResult } from './provider.interface.ts';
-import { NormalizedEvent, AirQualityData, SeverityLevel } from '../../shared/types.ts';
+import type { DisasterDataProvider, DataFetchResult } from './provider.interface.ts';
+import type { NormalizedEvent, AirQualityData, SeverityLevel } from '../../shared/types.ts';
 
 export class AirQualityProvider implements DisasterDataProvider {
   readonly id = 'open-meteo-airquality';

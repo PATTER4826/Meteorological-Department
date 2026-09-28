@@ -3,7 +3,7 @@
  * Discord Notification & Bot Service
  */
 
-import { NormalizedEvent, SeverityLevel } from '../../shared/types.ts';
+import type { NormalizedEvent, SeverityLevel } from '../../shared/types.ts';
 import { disasterStore } from '../db/store.ts';
 
 export interface DiscordEmbedField {

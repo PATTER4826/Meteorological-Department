@@ -3,8 +3,8 @@
  * Thailand Hydrological & River Basin Monitor (ThaiWater / RID schema)
  */
 
-import { DisasterDataProvider, DataFetchResult } from './provider.interface.ts';
-import { NormalizedEvent, FloodStationData, SeverityLevel } from '../../shared/types.ts';
+import type { DisasterDataProvider, DataFetchResult } from './provider.interface.ts';
+import type { NormalizedEvent, FloodStationData, SeverityLevel } from '../../shared/types.ts';
 
 export class FloodProvider implements DisasterDataProvider {
   readonly id = 'thai-water-flood';

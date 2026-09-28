@@ -5,15 +5,16 @@
 
 import React from 'react';
 import { NormalizedEvent } from '../../shared/types.ts';
-import { X, ExternalLink, ShieldAlert, Cpu, AlertTriangle, CheckCircle2, Clock, MapPin, Gauge } from 'lucide-react';
+import { X, ExternalLink, ShieldAlert, Cpu, AlertTriangle, CheckCircle2, Clock, MapPin, Gauge, LifeBuoy } from 'lucide-react';
 
 interface EventDetailModalProps {
   event: NormalizedEvent | null;
   onClose: () => void;
   onSendToDiscord?: (event: NormalizedEvent) => void;
+  onOpenEmergencyGuide?: (type: any) => void;
 }
 
-export const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onSendToDiscord }) => {
+export const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onSendToDiscord, onOpenEmergencyGuide }) => {
   if (!event) return null;
 
   // Calculate data freshness
@@ -218,6 +219,15 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClo
           </div>
 
           <div className="flex items-center gap-2">
+            {onOpenEmergencyGuide && (
+              <button
+                onClick={() => onOpenEmergencyGuide(event.type)}
+                className="px-3.5 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/40 font-medium flex items-center gap-1.5 transition-colors"
+              >
+                <LifeBuoy className="w-3.5 h-3.5" />
+                <span>คู่มือรับมือภัยนี้</span>
+              </button>
+            )}
             {onSendToDiscord && (
               <button
                 onClick={() => onSendToDiscord(event)}

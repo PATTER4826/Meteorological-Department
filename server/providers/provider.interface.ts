@@ -3,7 +3,7 @@
  * Data Provider Interface
  */
 
-import { NormalizedEvent } from '../../shared/types.ts';
+import type { NormalizedEvent } from '../../shared/types.ts';
 
 export interface DataFetchResult {
   events: NormalizedEvent[];

@@ -3,8 +3,9 @@
  * USGS Earthquake Data Provider
  */
 
-import { DisasterDataProvider, DataFetchResult } from './provider.interface.ts';
-import { NormalizedEvent, EarthquakeData, SeverityLevel, THAILAND_PROVINCES, calculateDistanceKm } from '../../shared/types.ts';
+import type { DisasterDataProvider, DataFetchResult } from './provider.interface.ts';
+import type { NormalizedEvent, EarthquakeData, SeverityLevel } from '../../shared/types.ts';
+import { THAILAND_PROVINCES, calculateDistanceKm } from '../../shared/types.ts';
 
 export class EarthquakeProvider implements DisasterDataProvider {
   readonly id = 'usgs-earthquake';

@@ -4,7 +4,7 @@
  */
 
 import { GoogleGenAI, Type } from '@google/genai';
-import { NormalizedEvent, AIAnalysisResult, SituationalSummary } from '../../shared/types.ts';
+import type { NormalizedEvent, AIAnalysisResult, SituationalSummary } from '../../shared/types.ts';
 import { disasterStore } from '../db/store.ts';
 
 class GeminiAIService {

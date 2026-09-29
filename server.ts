@@ -277,9 +277,10 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, () => {
-    console.log(`🇹🇭 THAI WEATHER & DISASTER AI CENTER server running on port ${PORT}`);
-    console.log(`📡 Real-time SSE endpoint: http://localhost:${PORT}/api/realtime`);
+  const port = Number(PORT) || 3000;
+  app.listen(port, '0.0.0.0', () => {
+    console.log(`🇹🇭 THAI WEATHER & DISASTER AI CENTER server running on port ${port}`);
+    console.log(`📡 Real-time SSE endpoint: http://localhost:${port}/api/realtime`);
   });
 }
 

@@ -6,6 +6,7 @@
 import type { DisasterDataProvider, DataFetchResult } from './provider.interface.ts';
 import type { NormalizedEvent, WeatherObservationData, SeverityLevel } from '../../shared/types.ts';
 import { THAILAND_PROVINCES } from '../../shared/types.ts';
+import { AlertRuleEngine } from '../rules/alert-rules.engine.ts';
 
 export class WeatherProvider implements DisasterDataProvider {
   readonly id = 'open-meteo-weather';
@@ -103,9 +104,13 @@ export class WeatherProvider implements DisasterDataProvider {
         };
         observations.push(obs);
 
-        // Generate events if conditions warrant alerting
-        if (isThunder || (rainMm >= 35) || windSpeed >= 50) {
-          const sev: SeverityLevel = rainMm >= 50 || windSpeed >= 65 ? 'CRITICAL' : 'WARNING';
+        // Generate events if conditions warrant alerting using AlertRuleEngine
+        const rainRule = AlertRuleEngine.evaluateHeavyRain(rainMm);
+
+        if (isThunder || rainRule.shouldAlert || windSpeed >= 50) {
+          let sev: SeverityLevel = rainRule.severity;
+          if (windSpeed >= 65 || rainMm >= 50) sev = 'CRITICAL';
+          else if (sev === 'INFORMATION') sev = 'WARNING';
           const type = isThunder ? 'THUNDERSTORM' : 'HEAVY_RAIN';
 
           events.push({

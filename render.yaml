@@ -1,25 +1,82 @@
 services:
+  # 1. Web Service (Dashboard + Real-time API + Embedded 24/7 Worker)
   - type: web
     name: thai-weather-disaster-ai-center
     runtime: node
-    plan: free
+    plan: starter
     region: singapore
     buildCommand: npm install && npm run build
-    startCommand: npm start
+    startCommand: npm run start:web
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
-      # All environment variables below are OPTIONAL. The app functions out-of-the-box with automatic SQLite & in-memory fallbacks.
-      - key: GEMINI_API_KEY
-        sync: false
       - key: DISCORD_TOKEN
         sync: false
       - key: DISCORD_CLIENT_ID
         sync: false
+      - key: DISCORD_GUILD_ID
+        sync: false
+      - key: DISCORD_ALERT_CHANNEL_ID
+        sync: false
+      - key: DISCORD_ALERT_ENABLED
+        value: "true"
       - key: DISCORD_WEBHOOK_CRITICAL
         sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: WEATHER_POLL_INTERVAL_MS
+        value: "180000"
+      - key: EARTHQUAKE_POLL_INTERVAL_MS
+        value: "60000"
+      - key: FLOOD_POLL_INTERVAL_MS
+        value: "300000"
+      - key: STORM_POLL_INTERVAL_MS
+        value: "300000"
+      - key: AIR_QUALITY_POLL_INTERVAL_MS
+        value: "300000"
+      - key: ALERT_TEST_MODE
+        value: "false"
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+
+  # 2. Dedicated 24/7 Alert Background Worker (Zero downtime background daemon)
+  - type: worker
+    name: thai-disaster-alert-worker
+    runtime: node
+    plan: starter
+    region: singapore
+    buildCommand: npm install
+    startCommand: npm run start:worker
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: DISCORD_ALERT_CHANNEL_ID
+        sync: false
+      - key: DISCORD_ALERT_ENABLED
+        value: "true"
+      - key: DISCORD_WEBHOOK_CRITICAL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: WEATHER_POLL_INTERVAL_MS
+        value: "180000"
+      - key: EARTHQUAKE_POLL_INTERVAL_MS
+        value: "60000"
+      - key: FLOOD_POLL_INTERVAL_MS
+        value: "300000"
+      - key: STORM_POLL_INTERVAL_MS
+        value: "300000"
+      - key: AIR_QUALITY_POLL_INTERVAL_MS
+        value: "300000"
+      - key: ALERT_TEST_MODE
+        value: "false"
       - key: DATABASE_URL
         sync: false
       - key: REDIS_URL

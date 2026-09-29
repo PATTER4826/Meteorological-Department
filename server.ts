@@ -13,6 +13,8 @@ import { dataCollector } from './server/collector/collector.ts';
 import { sseManager } from './server/realtime/sse.ts';
 import { geminiService } from './server/ai/gemini.service.ts';
 import { DiscordService } from './server/notifications/discord.service.ts';
+import { alertWorker } from './server/worker/alert.worker.ts';
+import { logger } from './server/utils/logger.ts';
 import type { EventType, SeverityLevel, NormalizedEvent } from './shared/types.ts';
 
 dotenv.config();
@@ -24,6 +26,21 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
+
+// Public Health Check Endpoint (Adheres strictly to Requirement 9)
+app.get('/health', (req: Request, res: Response) => {
+  const workerHealth = alertWorker.getHealthState();
+  res.json({
+    status: 'ok',
+    discord: DiscordService.isOnline() ? 'online' : (process.env.DISCORD_TOKEN ? 'connecting' : 'standby_webhook'),
+    alertWorker: workerHealth.status,
+    lastWeatherCheck: workerHealth.lastWeatherCheck || 'none',
+    lastEarthquakeCheck: workerHealth.lastEarthquakeCheck || 'none',
+    lastFloodCheck: workerHealth.lastFloodCheck || 'none',
+    lastStormCheck: workerHealth.lastStormCheck || 'none',
+    lastAirQualityCheck: workerHealth.lastAirQualityCheck || 'none'
+  });
+});
 
 // API Endpoints
 
@@ -151,11 +168,8 @@ app.post('/api/admin/providers/:id/run', async (req: Request, res: Response) => 
     return res.status(404).json({ success: false, error: 'Provider not found' });
   }
 
-  // Find provider instance in collector and trigger run
-  const activeInstance = (dataCollector as any).providers.find((p: any) => p.id === id);
-  if (activeInstance) {
-    await dataCollector.executeProviderRun(activeInstance);
-  }
+  // Trigger manual category run on alertWorker
+  await alertWorker.runProvider(id);
 
   res.json({ success: true, message: `Manual sync executed for ${prov.name}`, data: prov });
 });
@@ -254,10 +268,12 @@ app.get('/api/admin/logs', (req: Request, res: Response) => {
   });
 });
 
-// Start Background Collector
-dataCollector.start().catch((err) => {
-  console.error('Failed to start Data Collector:', err);
-});
+// Start 24/7 Autonomous Background Alert Worker
+if (process.env.DISABLE_EMBEDDED_WORKER !== 'true') {
+  alertWorker.start().catch((err) => {
+    logger.error(`Failed to start 24/7 Alert Worker: ${err.message}`);
+  });
+}
 
 // Frontend Vite Middleware Setup
 async function startServer() {
@@ -278,10 +294,31 @@ async function startServer() {
   }
 
   const port = Number(PORT) || 3000;
-  app.listen(port, '0.0.0.0', () => {
-    console.log(`🇹🇭 THAI WEATHER & DISASTER AI CENTER server running on port ${port}`);
-    console.log(`📡 Real-time SSE endpoint: http://localhost:${port}/api/realtime`);
+  const server = app.listen(port, '0.0.0.0', () => {
+    logger.info(`🇹🇭 THAI WEATHER & DISASTER AI CENTER server running on port ${port}`);
+    logger.info(`📡 Real-time SSE endpoint: http://localhost:${port}/api/realtime`);
+    logger.info(`🏥 Health check endpoint: http://localhost:${port}/health`);
   });
+
+  // Graceful shutdown handling (SIGTERM & SIGINT)
+  const handleGracefulShutdown = async (signal: string) => {
+    logger.info(`Received ${signal}. Graceful shutdown sequence initiating...`);
+    try {
+      await alertWorker.stop();
+      server.close(() => {
+        logger.info('HTTP server closed. Exiting process safely.');
+        process.exit(0);
+      });
+      // Force exit after 10s if hung
+      setTimeout(() => process.exit(0), 10000).unref();
+    } catch (e: any) {
+      logger.error(`Error during graceful shutdown: ${e.message}`);
+      process.exit(1);
+    }
+  };
+
+  process.on('SIGTERM', () => handleGracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => handleGracefulShutdown('SIGINT'));
 }
 
 startServer();

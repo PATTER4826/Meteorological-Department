@@ -5,6 +5,7 @@
 
 import type { DisasterDataProvider, DataFetchResult } from './provider.interface.ts';
 import type { NormalizedEvent, FloodStationData, SeverityLevel } from '../../shared/types.ts';
+import { AlertRuleEngine } from '../rules/alert-rules.engine.ts';
 
 export class FloodProvider implements DisasterDataProvider {
   readonly id = 'thai-water-flood';
@@ -113,19 +114,13 @@ export class FloodProvider implements DisasterDataProvider {
       const ratio = currentLevel / station.bankLevelM;
       const capacityPercent = Math.min(100, Math.round(ratio * 100));
 
+      const ruleRes = AlertRuleEngine.evaluateFlood(currentLevel, station.bankLevelM, capacityPercent);
+      const sev = ruleRes.severity !== 'INFORMATION' ? ruleRes.severity : null;
       let status: 'NORMAL' | 'WATCH' | 'WARNING' | 'CRITICAL' | 'OVERFLOW' = 'NORMAL';
-      let sev: SeverityLevel | null = null;
 
-      if (capacityPercent >= 96) {
-        status = 'OVERFLOW';
-        sev = 'CRITICAL';
-      } else if (capacityPercent >= 88) {
-        status = 'WARNING';
-        sev = 'WARNING';
-      } else if (capacityPercent >= 75) {
-        status = 'WATCH';
-        sev = 'WATCH';
-      }
+      if (sev === 'CRITICAL') status = 'OVERFLOW';
+      else if (sev === 'WARNING') status = 'WARNING';
+      else if (sev === 'WATCH') status = 'WATCH';
 
       const updatedStation: FloodStationData = {
         ...station,

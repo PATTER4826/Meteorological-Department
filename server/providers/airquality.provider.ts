@@ -5,6 +5,7 @@
 
 import type { DisasterDataProvider, DataFetchResult } from './provider.interface.ts';
 import type { NormalizedEvent, AirQualityData, SeverityLevel } from '../../shared/types.ts';
+import { AlertRuleEngine } from '../rules/alert-rules.engine.ts';
 
 export class AirQualityProvider implements DisasterDataProvider {
   readonly id = 'open-meteo-airquality';
@@ -54,26 +55,18 @@ export class AirQualityProvider implements DisasterDataProvider {
         const aqi = cur.us_aqi ?? Math.round(pm25 * 2.1);
         const recordedTime = cur.time ? new Date(cur.time).toISOString() : new Date().toISOString();
 
-        let statusText = 'คุณภาพอากาศดีมาก';
+        // Evaluate PM2.5 severity using AlertRuleEngine
+        const ruleRes = AlertRuleEngine.evaluatePM25(pm25, aqi);
+        const sev: SeverityLevel | null = ruleRes.severity !== 'INFORMATION' ? ruleRes.severity : null;
+        let statusText = ruleRes.subTypeTh;
         let colorCode = '#22c55e';
-        let sev: SeverityLevel | null = null;
 
-        // Thai PCD standard PM2.5 thresholds (µg/m³)
-        if (pm25 >= 75.1) {
-          statusText = 'มีผลกระทบต่อสุขภาพ (สีแดง)';
+        if (sev === 'CRITICAL') {
           colorCode = '#ef4444';
-          sev = 'CRITICAL';
-        } else if (pm25 >= 37.6) {
-          statusText = 'เริ่มมีผลกระทบต่อสุขภาพ (สีส้ม)';
+        } else if (sev === 'WARNING') {
           colorCode = '#f97316';
-          sev = 'WARNING';
-        } else if (pm25 >= 25.1) {
-          statusText = 'คุณภาพปานกลาง (สีเหลือง)';
+        } else if (sev === 'WATCH') {
           colorCode = '#eab308';
-          sev = 'WATCH';
-        } else if (pm25 >= 15.1) {
-          statusText = 'คุณภาพอากาศดี (สีเขียว)';
-          colorCode = '#22c55e';
         }
 
         const obs: AirQualityData = {

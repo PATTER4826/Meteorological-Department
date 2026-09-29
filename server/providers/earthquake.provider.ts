@@ -6,6 +6,7 @@
 import type { DisasterDataProvider, DataFetchResult } from './provider.interface.ts';
 import type { NormalizedEvent, EarthquakeData, SeverityLevel } from '../../shared/types.ts';
 import { THAILAND_PROVINCES, calculateDistanceKm } from '../../shared/types.ts';
+import { AlertRuleEngine } from '../rules/alert-rules.engine.ts';
 
 export class EarthquakeProvider implements DisasterDataProvider {
   readonly id = 'usgs-earthquake';
@@ -82,26 +83,10 @@ export class EarthquakeProvider implements DisasterDataProvider {
         };
         observations.push(obs);
 
-        // Determine severity based on magnitude and proximity to Thailand
-        let severity: SeverityLevel = 'INFORMATION';
-        let shouldAlert = false;
-
-        if (minDistanceKm <= 150 && mag >= 4.5) {
-          severity = 'CRITICAL';
-          shouldAlert = true;
-        } else if (minDistanceKm <= 350 && mag >= 5.0) {
-          severity = 'CRITICAL';
-          shouldAlert = true;
-        } else if (minDistanceKm <= 600 && mag >= 4.5) {
-          severity = 'WARNING';
-          shouldAlert = true;
-        } else if (minDistanceKm <= 1000 && mag >= 4.0) {
-          severity = 'WATCH';
-          shouldAlert = true;
-        } else if (minDistanceKm <= 1200 && mag >= 3.0) {
-          severity = 'INFORMATION';
-          shouldAlert = true;
-        }
+        // Determine severity using centralized AlertRuleEngine
+        const ruleRes = AlertRuleEngine.evaluateEarthquake(mag, minDistanceKm, depth);
+        const severity = ruleRes.severity;
+        const shouldAlert = minDistanceKm <= 1000 && (severity !== 'INFORMATION' || mag >= 3.5);
 
         // Only create alertable events for items within radius of interest
         if (shouldAlert) {

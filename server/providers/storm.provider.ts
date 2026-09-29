@@ -6,6 +6,7 @@
 import type { DisasterDataProvider, DataFetchResult } from './provider.interface.ts';
 import type { NormalizedEvent, StormData } from '../../shared/types.ts';
 import { calculateDistanceKm } from '../../shared/types.ts';
+import { AlertRuleEngine } from '../rules/alert-rules.engine.ts';
 
 export class StormProvider implements DisasterDataProvider {
   readonly id = 'tmd-cyclone-tracker';
@@ -41,16 +42,18 @@ export class StormProvider implements DisasterDataProvider {
 
     observations.push(activeStorm);
 
-    // If within 1000km of Thailand with forecast trajectory towards Indo-China, generate WATCH / WARNING
+    // If within monitoring range of Thailand with forecast trajectory towards Indo-China
     const dist = calculateDistanceKm(activeStorm.currentLat, activeStorm.currentLon, 16.0, 105.0); // towards East Thailand border
-    if (dist <= 850) {
+    const ruleRes = AlertRuleEngine.evaluateStorm(activeStorm.maxWindSpeedKmh, dist, activeStorm.name);
+
+    if (dist <= 850 && ruleRes.severity !== 'INFORMATION') {
       events.push({
         id: `storm-${activeStorm.id}`,
         fingerprint: `STORM_${activeStorm.id}_${nowIso.substring(0, 10)}`,
         type: 'STORM',
         title: `เฝ้าระวัง ${activeStorm.name} บริเวณทะเลจีนใต้ตอนกลาง`,
         description: `ตรวจพบ${activeStorm.name} ความเร็วลมสูงสุดใกล้ศูนย์กลางประมาณ ${activeStorm.maxWindSpeedKmh} กม./ชม. กำลังเคลื่อนตัวไปทางทิศตะวันตกเฉียงเหนือ มีแนวโน้มทวีกำลังแรงขึ้น และอาจส่งผลกระทบต่อภาคตะวันออกเฉียงเหนือและภาคเหนือของไทย`,
-        severity: 'WATCH',
+        severity: ruleRes.severity,
         status: 'ACTIVE',
         latitude: activeStorm.currentLat,
         longitude: activeStorm.currentLon,

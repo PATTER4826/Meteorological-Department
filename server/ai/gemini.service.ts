@@ -10,6 +10,7 @@ import { disasterStore } from '../db/store.ts';
 class GeminiAIService {
   private ai: GoogleGenAI | null = null;
   private readonly modelName = 'gemini-3.8-flash';
+  private quotaOrAccessIssueUntil = 0;
 
   constructor() {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -32,8 +33,8 @@ class GeminiAIService {
    * Analyze a newly detected or updated disaster event using Gemini
    */
   async analyzeEvent(event: NormalizedEvent): Promise<AIAnalysisResult> {
-    // If Gemini is not configured, generate strong deterministic rule-based analysis
-    if (!this.ai) {
+    // If Gemini is not configured or in quota restriction backoff, generate strong deterministic rule-based analysis
+    if (!this.ai || Date.now() < this.quotaOrAccessIssueUntil) {
       return this.generateFallbackAnalysis(event);
     }
 
@@ -146,7 +147,14 @@ class GeminiAIService {
         analyzedAt: new Date().toISOString()
       };
     } catch (err: any) {
-      disasterStore.addAuditLog('ERROR', `Gemini AI analysis error for event ${event.id}: ${err.message}`);
+      const errMsg = err?.message || String(err);
+      const isRestricted = errMsg.includes('403') || errMsg.includes('PERMISSION_DENIED') || errMsg.includes('resource_exhausted') || errMsg.includes('quota');
+      if (isRestricted) {
+        this.quotaOrAccessIssueUntil = Date.now() + 10 * 60 * 1000; // 10 minutes backoff
+        disasterStore.addAuditLog('WARN', 'Gemini AI API quota or permission restricted. Switched to verified rule-based analysis.');
+      } else {
+        disasterStore.addAuditLog('WARN', `Gemini AI analysis fallback used for ${event.id}: ${errMsg.substring(0, 80)}`);
+      }
       return this.generateFallbackAnalysis(event);
     }
   }

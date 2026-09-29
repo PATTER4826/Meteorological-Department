@@ -289,7 +289,19 @@ class DisasterStore {
    * Upsert an event with deduplication and escalation detection
    */
   public upsertEvent(event: NormalizedEvent): { isNew: boolean; isEscalated: boolean; event: NormalizedEvent } {
-    const existing = this.events.get(event.fingerprint);
+    // Check by fingerprint OR by ID to ensure complete uniqueness
+    let existingKey = event.fingerprint;
+    let existing = this.events.get(event.fingerprint);
+
+    if (!existing) {
+      for (const [key, ev] of this.events.entries()) {
+        if (ev.id === event.id) {
+          existing = ev;
+          existingKey = key;
+          break;
+        }
+      }
+    }
 
     // Persist to database manager (SQLite in dev, PostgreSQL when configured)
     databaseManager.saveEvent(event).catch(() => {});
@@ -310,6 +322,11 @@ class DisasterStore {
       });
 
       return { isNew: true, isEscalated: false, event };
+    }
+
+    // If key changed, delete old key
+    if (existingKey !== event.fingerprint) {
+      this.events.delete(existingKey);
     }
 
     // Check for escalation
@@ -351,6 +368,14 @@ class DisasterStore {
     limit?: number;
   }): NormalizedEvent[] {
     let list = Array.from(this.events.values());
+
+    // Deduplicate by event.id
+    const seenIds = new Set<string>();
+    list = list.filter((e) => {
+      if (seenIds.has(e.id)) return false;
+      seenIds.add(e.id);
+      return true;
+    });
 
     if (options?.type) {
       list = list.filter((e) => e.type === options.type);

@@ -1,4 +1,3 @@
-
 name: Weather Alert
 
 on:
@@ -12,6 +11,8 @@ permissions:
 jobs:
   run-alert:
     runs-on: ubuntu-latest
+    timeout-minutes: 3
+
     steps:
       - name: Download repository
         uses: actions/checkout@v4
@@ -29,4 +30,3 @@ jobs:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}
         run: python bot/alert.py
-        
